@@ -7,19 +7,14 @@
 //
 
 #import "ExpenseManager.h"
+#import "NSDate+TimeAgo.h"
 
 #define secondsInDay 86400
 
 @interface ExpenseManager ()
 
-// expensesDictionary[@"Just Now"] -> @[expense1, expense2, etc.];
-// Each key represents a section.
-// Each value represents the rows in that section.
-@property (nonatomic, strong) NSMutableDictionary *mutableExpensesDictionary;
-
-// @[@"Just Now", @"A moment ago...", @"Last Month", etc.]
-@property (nonatomic, strong) NSMutableArray *expenseSectionNames;
-
+@property (nonatomic, strong) NSMutableDictionary *mutableGroupedExpenses;
+@property (nonatomic, strong) NSMutableArray *mutableDateNames;
 @property (nonatomic, strong) NSMutableArray *mutableExpenses;
 
 
@@ -76,22 +71,18 @@
     return [self.mutableExpenses copy];
 }
 
-- (NSArray *)sortedExpenses {
-    if (!self.mutableExpensesDictionary) {
-        self.mutableExpensesDictionary = [NSMutableDictionary dictionary];
-    }
-    
-//    NSDate *today = [NSDate date];
-    
-    return nil;
+- (NSDictionary *)groupedExpenses {
+    return [self.mutableGroupedExpenses copy];
+}
+
+- (NSArray *)dateNames {
+    return [self.mutableDateNames copy];
 }
 
 #pragma mark - Public
 
 - (void)addExpense:(Expense *)expense {
     [self.mutableExpenses insertObject:expense atIndex:0];
-    
-    
 }
 
 - (void)loadExpenses {
@@ -103,39 +94,6 @@
     if (!self.mutableExpenses) {
         self.mutableExpenses = [NSMutableArray array];
     }
-    
-    if (!self.mutableExpensesDictionary) {
-        self.mutableExpensesDictionary = [NSMutableDictionary dictionary];
-    }
-
-    for (Expense *expense in self.expenses) {
-        
-        
-        //        NSDate *expenseDate = expense.date;
-        NSTimeInterval secondsSinceExpense = [expense.date timeIntervalSinceNow];
-        NSUInteger numDays = secondsSinceExpense / secondsInDay;
-        NSString *numDaysStr = [[NSString alloc]initWithFormat:@"%li", numDays];
-        NSLog(@"numdays = %@", numDaysStr);
-        NSLog(@"secondsSinceExpense = %f", secondsSinceExpense);
-        
-        if (![self.mutableExpensesDictionary valueForKey:numDaysStr]) {
-            NSLog(@"if");
-            NSDictionary *dayOfExpenses = [[NSDictionary alloc]initWithObjectsAndKeys:@[expense], numDaysStr, nil];
-            [self.mutableExpensesDictionary addEntriesFromDictionary:dayOfExpenses];
-        }
-        
-        else {
-            NSLog(@"else");
-            NSMutableArray *existingExpense = [self.mutableExpensesDictionary[numDaysStr] mutableCopy];
-            [existingExpense addObject:expense];
-            NSDictionary *dayOfExpenses = [[NSDictionary alloc]initWithObjectsAndKeys:existingExpense, numDaysStr, nil];
-            [self.mutableExpensesDictionary removeObjectForKey:numDaysStr];
-            [self.mutableExpensesDictionary addEntriesFromDictionary:dayOfExpenses];
-        
-        }
-        NSLog(@"%@", self.mutableExpensesDictionary);
-    }
-    
 }
 
 - (void)saveExpenses {
@@ -148,6 +106,36 @@
     
     // Done :)
     NSLog(@"%d expenses saved.", (int)self.mutableExpenses.count);
+}
+
+- (void)groupExpenses {
+    // Stores all unique date names
+    self.mutableDateNames = [NSMutableArray array];
+    // Stores all expenses grouped by date name
+    self.mutableGroupedExpenses = [NSMutableDictionary dictionary];
+    
+    // Sort expenses by most recent
+    NSArray *sortedExpenses = [self.mutableExpenses sortedArrayUsingDescriptors:@[[NSSortDescriptor sortDescriptorWithKey:@"date" ascending:NO]]];
+    
+    // Enumerate through sorted expenses
+    [sortedExpenses enumerateObjectsUsingBlock:^(Expense *expense, NSUInteger idx, BOOL *stop) {
+        // Determine the date string
+        NSString *dateStr = [expense.date timeAgo];
+        // Expenses already grouped by date name
+        NSMutableArray *expenses = [self.mutableGroupedExpenses valueForKey:dateStr];
+        // If none exist add the first one
+        if (!expenses) {
+            expenses = [NSMutableArray arrayWithObject:expense];
+            // Add the date name
+            // NOTE: These are added in order since expenses are already sorted
+            [self.mutableDateNames addObject:dateStr];
+        } else {
+            // Add new expense to existing group
+            [expenses addObject:expense];
+        }
+        // Finally update the group of expenses associated with the date name
+        [self.mutableGroupedExpenses setValue:expenses forKey:dateStr];
+    }];
 }
 
 @end

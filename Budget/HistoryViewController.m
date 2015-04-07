@@ -9,7 +9,6 @@
 #import "HistoryViewController.h"
 #import "ExpenseManager.h"
 #import "UIColor+BudgetApp.h"
-#import <NSDate+TimeAgo/NSDate+TimeAgo.h>
 
 @interface HistoryViewController () <UITableViewDelegate, UITableViewDataSource>
 
@@ -36,31 +35,43 @@
       forCellReuseIdentifier:@"cell"];
     
     [self.view addSubview:self.tableView];
+}
 
+// Called immediately before the user sees this screen
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
     
+    [self reloadData];
+}
+
+- (void)reloadData {
+    // Group expenses
+    [[ExpenseManager sharedManager] groupExpenses];
+    
+    // Reload the table view
+    [self.tableView reloadData];
 }
 
 #pragma mark - UITableViewDataSource
 
 
-//- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-//    
-//}
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+    return [ExpenseManager sharedManager].dateNames.count;
+}
 
 
-- (NSInteger)tableView:(UITableView *)tableView
- numberOfRowsInSection:(NSInteger)section {
-//    NSDictionary *obj;
-//    NSArray *arr = [obj allValues]
-    return [ExpenseManager sharedManager].expenses.count;
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    NSString *dateStr = [ExpenseManager sharedManager].dateNames[section];
+    NSMutableArray *expenses = [[ExpenseManager sharedManager].groupedExpenses valueForKey:dateStr];
+    return expenses.count;
 }
 
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
     
+    NSString *dateStr = [ExpenseManager sharedManager].dateNames[section];
     UILabel *dateLabel = [[UILabel alloc] initWithFrame:CGRectMake(45, 0, 0, 0)];
     dateLabel.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleRightMargin;
-    NSDate *now = [NSDate date];
-    dateLabel.text = [now timeAgo];
+    dateLabel.text = dateStr;
     dateLabel.textColor = [UIColor darkSpotColor];
     dateLabel.font = [UIFont fontWithName:@"Helvetica-Bold" size:16];
     
@@ -75,11 +86,11 @@
     return 44;
 }
 
-- (UITableViewCell *)tableView:(UITableView *)tableView
-         cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
     // Step 1: Get the model.
-    NSArray *expenses = [ExpenseManager sharedManager].expenses;
+    NSString *dateStr = [ExpenseManager sharedManager].dateNames[indexPath.section];
+    NSMutableArray *expenses = [[ExpenseManager sharedManager].groupedExpenses valueForKey:dateStr];
     Expense *expense = expenses[indexPath.row];
     
     // Step 2: Get a reusable cell.
@@ -91,11 +102,7 @@
     cell.accessoryType = UITableViewCellAccessoryNone;
     cell.backgroundColor = [UIColor spotColor];
     
-    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-    dateFormatter.dateStyle = NSDateFormatterShortStyle;
-    NSString *dateString = [dateFormatter stringFromDate:expense.date];
-    
-    cell.textLabel.text = [NSString stringWithFormat:@"(%@) $%@ - %@", dateString, expense.cost, expense.reason];
+    cell.textLabel.text = [NSString stringWithFormat:@"$%@ - %@", expense.cost, expense.reason];
     cell.textLabel.textColor = [UIColor whiteColor];
     cell.indentationLevel = 3;
     

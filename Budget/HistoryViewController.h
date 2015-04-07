@@ -13,4 +13,6 @@
 
 @property (nonatomic, strong) UITableView *tableView;
 
+- (void)reloadData;
+
 @end
