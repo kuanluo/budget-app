@@ -23,12 +23,15 @@
 @property (nonatomic, copy, readonly) NSString *remainingBudgetString;
 
 @property (nonatomic, strong, readonly) NSArray *expenses;
-@property (nonatomic, strong, readonly) NSArray *sortedExpenses;
+@property (nonatomic, strong, readonly) NSDictionary *groupedExpenses;
+@property (nonatomic, strong, readonly) NSArray *dateNames;
+
 
 + (instancetype)sharedManager;
 
 - (void)addExpense:(Expense *)expense;
 - (void)loadExpenses;
 - (void)saveExpenses;
+- (void)groupExpenses;
 
 @end

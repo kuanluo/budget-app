@@ -141,7 +141,7 @@ NS_ENUM(NSUInteger, ChildController) {
                              completion:^{
                                  
 //                                 [self.expenses addObject:expense];
-                                 [self.historyViewController.tableView reloadData];
+                                 [self.historyViewController reloadData];
                                  
                                  // TODO: Re-enable this when addExpense is working.
                                  
